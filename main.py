@@ -1,20 +1,21 @@
+# noinspection PyPep8Naming
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from Evtx.Evtx import Evtx
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
-from rich.text import Text
+from rich.text import Text as RichText
 from rich.progress import (
     Progress,
     SpinnerColumn,
     TextColumn,
     BarColumn,
     TaskProgressColumn,
-    TimeRemainingColumn
+    TimeRemainingColumn,
+    ProgressColumn
 )
 
-# Import rules module from the detector/ directory
 from detector.rules import detect_credential_prompt, detect_suspicious_process
 
 console = Console(force_terminal=True)
@@ -55,7 +56,6 @@ def get_severity_color(severity):
     return colors.get(severity.upper(), "white")
 
 
-# Updated path relative to project root
 dataset_path = Path("data/samples")
 evtx_files = list(dataset_path.rglob("*.evtx"))
 stats = {"files": 0, "events": 0, "4104": 0, "process": 0, "detections": 0}
@@ -65,12 +65,17 @@ console.print("[bold blue]Starting Detection Engine...[/bold blue]\n")
 if not evtx_files:
     console.print(f"[bold yellow]No .evtx files found in '{dataset_path.resolve()}'.[/bold yellow]")
 else:
+    # Explicitly typed column tuple resolves PyCharm inspection warnings
+    progress_columns: tuple[ProgressColumn, ...] = (
+        SpinnerColumn(),
+        TextColumn(text_format="[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+        TimeRemainingColumn(),
+    )
+
     with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            BarColumn(),
-            TaskProgressColumn(),
-            TimeRemainingColumn(),
+            *progress_columns,
             console=console,
             transient=False
     ) as progress:
@@ -120,7 +125,8 @@ else:
                             stats["detections"] += 1
                             color = get_severity_color(result["severity"])
 
-                            alert_text = Text()
+                            # Use RichText alias to prevent collision with typing.Text
+                            alert_text = RichText()
                             alert_text.append("File: ", style="bold")
                             alert_text.append(f"{file}\n")
                             alert_text.append("Event Record ID: ", style="bold")
@@ -152,7 +158,7 @@ else:
 
             progress.advance(scan_task)
 
-# Generate Summary Table
+# Summary Output Table
 table = Table(title="Detection Engine Summary", show_header=True, header_style="bold magenta")
 table.add_column("Metric", style="cyan", no_wrap=True)
 table.add_column("Count", justify="right", style="green")
