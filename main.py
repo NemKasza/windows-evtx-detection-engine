@@ -1,4 +1,5 @@
 # noinspection PyPep8Naming
+import argparse
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from Evtx.Evtx import Evtx
@@ -56,11 +57,30 @@ def get_severity_color(severity):
     return colors.get(severity.upper(), "white")
 
 
-dataset_path = Path("data/samples")
+# --- CLI Argument Parsing ---
+parser = argparse.ArgumentParser(
+    description="Scan Windows EVTX logs for suspicious process creation and PowerShell execution."
+)
+parser.add_argument(
+    "-d", "--directory",
+    type=Path,
+    default=Path("data/samples"),
+    help="Path to directory containing .evtx files (default: data/samples)"
+)
+args = parser.parse_args()
+
+dataset_path: Path = args.directory
+
+# Validate target directory
+if not dataset_path.exists() or not dataset_path.is_dir():
+    console.print(f"[bold red]Error:[/bold red] Directory '{dataset_path}' does not exist or is not a valid folder.")
+    exit(1)
+
 evtx_files = list(dataset_path.rglob("*.evtx"))
 stats = {"files": 0, "events": 0, "4104": 0, "process": 0, "detections": 0}
 
-console.print("[bold blue]Starting Detection Engine...[/bold blue]\n")
+console.print(
+    f"[bold blue]Starting Detection Engine on target:[/bold blue] [yellow]{dataset_path.resolve()}[/yellow]\n")
 
 if not evtx_files:
     console.print(f"[bold yellow]No .evtx files found in '{dataset_path.resolve()}'.[/bold yellow]")
@@ -125,7 +145,6 @@ else:
                             stats["detections"] += 1
                             color = get_severity_color(result["severity"])
 
-                            # Use RichText alias to prevent collision with typing.Text
                             alert_text = RichText()
                             alert_text.append("File: ", style="bold")
                             alert_text.append(f"{file}\n")
