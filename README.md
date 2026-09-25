@@ -94,7 +94,7 @@ Clone the repository and create a Python virtual environment:
 
 ```bash
 git clone [https://github.com/NemKasza/windows-evtx-detection-engine.git](https://github.com/NemKasza/windows-evtx-detection-engine.git)
-cd windows-detection-engine
+cd windows-evtx-detection-engine
 
 python3 -m venv .venv
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
