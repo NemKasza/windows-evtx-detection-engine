@@ -1,4 +1,4 @@
-```markdown
+
 # Windows EVTX Detection Engine
 
 A lightweight Python-based detection engine for analyzing Windows Event Log (EVTX) files and identifying suspicious PowerShell and process execution behavior.
@@ -166,6 +166,3 @@ windows-detection-engine/
 * **Context-Rich Output:** Alerts detail the rule name, file source, record ID, timestamp, severity, rationale, and specific matched indicators.
 * **Scope:** Designed as a lightweight CLI analysis tool. It does not provide real-time streaming ingestion, a SIEM backend, or centralized database storage.
 
-```
-
-```
