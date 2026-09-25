@@ -16,8 +16,15 @@ from rich.progress import (
     TimeRemainingColumn,
     ProgressColumn
 )
+from detector.rules import (
+    detect_credential_prompt,
+    detect_amsi_and_logging_bypass,
+    detect_in_memory_execution,
+    detect_suspicious_process,
+    detect_system_recovery_tampering,
+    detect_suspicious_parent
+)
 
-from detector.rules import detect_credential_prompt, detect_suspicious_process
 
 console = Console(force_terminal=True)
 NS = {'ns': 'http://schemas.microsoft.com/win/2004/08/events/event'}
@@ -123,22 +130,45 @@ else:
                         result = None
                         rule_name = ""
 
-                        # Analyze PowerShell Script Blocks
+                        # Analyze PowerShell Script Blocks (Event ID 4104)
                         if event["event_id"] == "4104":
                             stats["4104"] += 1
                             script_text = event["data"].get("ScriptBlockText", "")
                             if script_text:
+                                # Rule 1: Credential Prompt
                                 result = detect_credential_prompt(script_text)
                                 rule_name = "Credential Prompt Detection"
 
-                        # Analyze Process Creations
+                                # Rule 2: AMSI & Logging Bypass (if Rule 1 clean)
+                                if not result.get("detected"):
+                                    result = detect_amsi_and_logging_bypass(script_text)
+                                    rule_name = "AMSI / Telemetry Bypass"
+
+                                # Rule 3: In-Memory Reflection (if Rules 1 & 2 clean)
+                                if not result.get("detected"):
+                                    result = detect_in_memory_execution(script_text)
+                                    rule_name = "In-Memory Script Execution"
+
+                        # Analyze Process Creations (Event ID 1)
                         elif event["event_id"] == "1":
                             stats["process"] += 1
                             image = event["data"].get("Image", "")
                             cmdline = event["data"].get("CommandLine", "")
+                            parent_image = event["data"].get("ParentImage", "")
 
+                            # Rule 1: Suspicious Command Line / LOLBins
                             result = detect_suspicious_process(cmdline, image)
                             rule_name = "Suspicious Process Detection"
+
+                            # Rule 2: Recovery / Shadow Copy Tampering (if Rule 1 clean)
+                            if not result.get("detected"):
+                                result = detect_system_recovery_tampering(cmdline, image)
+                                rule_name = "System Recovery Tampering"
+
+                            # Rule 3: Suspicious Parent-Child Process (if Rules 1 & 2 clean)
+                            if not result.get("detected") and parent_image:
+                                result = detect_suspicious_parent(parent_image, image)
+                                rule_name = "Suspicious Parent-Child Process"
 
                         # Print Formatted Detections
                         if result and result.get("detected"):
