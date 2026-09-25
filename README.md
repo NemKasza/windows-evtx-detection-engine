@@ -93,7 +93,7 @@ Sample EVTX telemetry files included in `data/samples/` are reproduced from the 
 Clone the repository and create a Python virtual environment:
 
 ```bash
-git clone [https://github.com/NemKasza/windows-evtx-detection-engine.git](https://github.com/NemKasza/windows-evtx-detection-engine.git)
+git clone https://github.com/NemKasza/windows-evtx-detection-engine.git
 cd windows-evtx-detection-engine
 
 python3 -m venv .venv
