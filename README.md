@@ -83,7 +83,7 @@ Indicators:
 
 ## Dataset & Attribution
 
-Sample EVTX telemetry files included in `data/samples/` are reproduced from the public [EVTX-ATTACK-SAMPLES](https://github.com/sbousseaden/EVTX-ATTACK-SAMPLES?utm_source=gemini) repository maintained by Samir Bousseaden.
+Sample EVTX telemetry files included in `data/samples/` are reproduced from the public [EVTX-ATTACK-SAMPLES](https://github.com/sbousseaden/EVTX-ATTACK-SAMPLES) repository maintained by Samir Bousseaden.
 
 > **Licensing Notice:**
 > The upstream repository identifies the project as licensed under the **GNU General Public License (GPL)**. These files are included here solely as sample telemetry for demonstrating and testing the detection engine. See the original repository and its `LICENSE.GPL` file for complete license terms.
