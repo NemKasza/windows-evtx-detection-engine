@@ -2,7 +2,7 @@
 
 A lightweight Python-based detection engine for analyzing Windows Event Log (EVTX) files and identifying suspicious PowerShell and process execution behavior.
 
-The project was built as a practical cybersecurity portfolio project focused on **Windows telemetry, detection logic, false-positive reduction, and analyst-friendly alerting**.
+The project was built as a practical cybersecurity portfolio project focused on **Windows telemetry, detection logic,  and analyst-friendly alerting**.
 
 ## Project Goal
 
