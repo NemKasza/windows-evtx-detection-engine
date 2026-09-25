@@ -5,6 +5,14 @@ A lightweight Python-based detection engine for analyzing Windows Event Log (EVT
 
 The project was built as a practical cybersecurity portfolio project focused on **Windows telemetry, detection logic, false-positive reduction, and analyst-friendly alerting**.
 
+<img width="1339" height="399" alt="Decetor in use" src="https://github.com/user-attachments/assets/fadbfbfb-b148-4643-a14a-af298515849b" />
+
+---
+
+<img width="908" height="252" alt="Finished detector output" src="https://github.com/user-attachments/assets/535f9d8a-ca46-419d-b68a-fffc8d9c1e3f" />
+
+
+
 ## Project Goal
 
 The goal is to demonstrate how Windows event telemetry can be transformed into actionable security detections without relying on a full SIEM platform.
@@ -109,6 +117,10 @@ python3 -m pip install -r requirements.txt
 ```
 
 ## Usage
+
+
+<img width="708" height="154" alt="helpOutput" src="https://github.com/user-attachments/assets/dbd4504f-fda2-47bf-9b15-53972a01fbae" />
+
 
 Run the engine against the default sample directory (`data/samples/`):
 
